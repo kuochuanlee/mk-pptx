@@ -173,7 +173,7 @@ class TestBuildDiagramFailure:
     def test_returns_none_when_mmdc_exit_nonzero(self, tmp_path: Path):
         """mmdc 執行失敗（exit code != 0）時應回傳 None。"""
         # mock _find_mmdc 讓程式認為 mmdc 存在
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
             # mock subprocess.run 讓其模擬失敗
             mock_result = MagicMock()
             mock_result.returncode = 1
@@ -191,7 +191,7 @@ class TestBuildDiagramFailure:
 
     def test_returns_none_when_mmdc_timeout(self, tmp_path: Path):
         """mmdc 執行逾時時應回傳 None（不拋例外）。"""
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
             with patch(
                 "subprocess.run",
                 side_effect=subprocess.TimeoutExpired(cmd="mmdc", timeout=60),
@@ -216,7 +216,7 @@ class TestBuildDiagramFailure:
             created_tmp_paths.append(path)
             return path
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
             mock_result = MagicMock()
             mock_result.returncode = 1
             mock_result.stdout = ""
@@ -256,7 +256,7 @@ class TestBuildDiagramFailure:
         # 改為測試 mmdc 存在但失敗的情況
         new_dir2 = tmp_path / "nested2" / "output"
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
             mock_result = MagicMock()
             mock_result.returncode = 1
             mock_result.stdout = ""
@@ -292,20 +292,37 @@ class TestBuildDiagramFailure:
 class TestBuildDiagramSuccess:
     """build_diagram() 成功情境測試，mock subprocess 讓其模擬成功。"""
 
-    def _make_mock_success(self) -> MagicMock:
-        """建立模擬成功的 subprocess.run 回傳值。"""
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = ""
-        mock_result.stderr = ""
-        return mock_result
+    def _make_subprocess_side_effect(self) -> MagicMock:
+        """建立模擬成功的 subprocess.run side_effect。
+
+        build_diagram.py 在 subprocess 成功後會檢查 output_path.exists()，
+        因此 side_effect 需要在被呼叫時根據 -o 參數建立對應的假輸出檔案。
+        """
+
+        def _fake_run(cmd, **kwargs):
+            # 從指令中解析 -o 參數後面的輸出路徑
+            try:
+                o_idx = cmd.index("-o")
+                out_path = Path(cmd[o_idx + 1])
+                out_path.touch()
+            except (ValueError, IndexError):
+                pass
+
+            # 回傳模擬成功的結果
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            mock_result.stdout = ""
+            mock_result.stderr = ""
+            return mock_result
+
+        return _fake_run
 
     def test_returns_diagram_result_on_success(self, tmp_path: Path):
         """mmdc 成功時應回傳 DiagramResult 物件。"""
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result):
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run):
                 result = build_diagram(
                     mermaid_string="flowchart LR\n  A --> B",
                     output_stem="slide_3",
@@ -317,10 +334,10 @@ class TestBuildDiagramSuccess:
 
     def test_png_path_has_correct_name(self, tmp_path: Path):
         """回傳的 png_path 應有正確的主檔名和副檔名。"""
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result):
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run):
                 result = build_diagram(
                     mermaid_string="flowchart LR\n  A --> B",
                     output_stem="slide_3_diagram",
@@ -333,10 +350,10 @@ class TestBuildDiagramSuccess:
 
     def test_svg_path_has_correct_name(self, tmp_path: Path):
         """回傳的 svg_path 應有正確的主檔名和副檔名。"""
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result):
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run):
                 result = build_diagram(
                     mermaid_string="flowchart LR\n  A --> B",
                     output_stem="slide_3_diagram",
@@ -349,10 +366,10 @@ class TestBuildDiagramSuccess:
 
     def test_subprocess_called_twice(self, tmp_path: Path):
         """應呼叫 subprocess.run 兩次（PNG 和 SVG 各一次）。"""
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run) as mock_run:
                 build_diagram(
                     mermaid_string="flowchart LR\n  A --> B",
                     output_stem="test",
@@ -363,10 +380,10 @@ class TestBuildDiagramSuccess:
 
     def test_png_command_includes_scale_flag(self, tmp_path: Path):
         """PNG 渲染指令應包含 -s 縮放參數。"""
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run) as mock_run:
                 build_diagram(
                     mermaid_string="flowchart LR\n  A --> B",
                     output_stem="test",
@@ -379,10 +396,10 @@ class TestBuildDiagramSuccess:
 
     def test_svg_command_excludes_scale_flag(self, tmp_path: Path):
         """SVG 渲染指令不應包含 -s 縮放參數。"""
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run) as mock_run:
                 build_diagram(
                     mermaid_string="flowchart LR\n  A --> B",
                     output_stem="test",
@@ -395,14 +412,14 @@ class TestBuildDiagramSuccess:
 
     def test_config_included_when_exists(self, tmp_path: Path):
         """mmdc 設定檔存在時，指令應包含 -c 參數。"""
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
         # 建立假的設定檔
         config_file = tmp_path / "mermaid.json"
         config_file.write_text("{}")
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run) as mock_run:
                 build_diagram(
                     mermaid_string="flowchart LR\n  A --> B",
                     output_stem="test",
@@ -417,12 +434,12 @@ class TestBuildDiagramSuccess:
 
     def test_config_excluded_when_not_exists(self, tmp_path: Path):
         """mmdc 設定檔不存在時，指令不應包含 -c 參數。"""
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
         nonexistent_config = tmp_path / "nonexistent.json"
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result) as mock_run:
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run) as mock_run:
                 build_diagram(
                     mermaid_string="flowchart LR\n  A --> B",
                     output_stem="test",
@@ -446,10 +463,10 @@ class TestBuildDiagramSuccess:
             created_tmp_paths.append(path)
             return path
 
-        mock_result = self._make_mock_success()
+        fake_run = self._make_subprocess_side_effect()
 
-        with patch("src.build_diagram._find_mmdc", return_value="/fake/mmdc"):
-            with patch("subprocess.run", return_value=mock_result):
+        with patch("src.build_diagram._find_mmdc", return_value=["/fake/mmdc"]):
+            with patch("subprocess.run", side_effect=fake_run):
                 with patch(
                     "src.build_diagram._write_temp_mmd",
                     side_effect=tracking_write_temp_mmd,

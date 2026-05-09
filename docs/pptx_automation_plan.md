@@ -513,8 +513,6 @@ schemas/        <- Schema 變更紀錄
 config/         <- mermaid.json 樣式調整（不含 template.pptx）
 src/            <- 程式邏輯
 tests/          <- 測試程式碼
-input/          <- 輸入素材（可選）
-output/*.json   <- AI 產出的 JSON 大綱（可追蹤簡報內容變更）
 pyproject.toml  <- 依賴定義
 ```
 

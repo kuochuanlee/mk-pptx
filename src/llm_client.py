@@ -5,7 +5,7 @@ LLM 呼叫抽象層。
 支援在不同環境（家用 / 公司）透過環境變數 LLM_BACKEND 切換不同 backend。
 
 支援的 backend：
-  - gemini：Google Gemini API，需設定 GEMINI_API_KEY
+  - gemini：Google Gemini API（google-genai SDK），需設定 GEMINI_API_KEY
   - azure_openai：Azure OpenAI，需設定 AZURE_OPENAI_ENDPOINT 與 AZURE_OPENAI_KEY
 """
 
@@ -31,7 +31,11 @@ class LLMClient(ABC):
 
 
 class GeminiClient(LLMClient):
-    """Google Gemini API 實作（家用開發環境）。"""
+    """Google Gemini API 實作（家用開發環境）。
+
+    使用新版 google-genai SDK（google.genai），
+    以取代已棄用的 google.generativeai 套件。
+    """
 
     def __init__(self) -> None:
         # 從環境變數讀取 API key，禁止寫死
@@ -45,36 +49,68 @@ class GeminiClient(LLMClient):
 
         # 延遲 import，未安裝 SDK 時不影響其他模組的匯入
         try:
-            import google.generativeai as genai
+            from google import genai
         except ImportError as exc:
             raise ImportError(
-                "google-generativeai 套件未安裝。"
-                "請執行：uv pip install google-generativeai"
+                "google-genai 套件未安裝。"
+                "請執行：uv pip install google-genai"
             ) from exc
 
-        genai.configure(api_key=api_key)
+        # 使用 Client 物件，不再使用全域 configure()
+        self._client = genai.Client(api_key=api_key)
 
         # 使用 gemini-2.0-flash 作為預設模型
-        model_name = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
-        self._model = genai.GenerativeModel(model_name)
+        self._model_name = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
-        logger.info("GeminiClient 初始化完成，模型：%s", model_name)
+        logger.info("GeminiClient 初始化完成，模型：%s", self._model_name)
 
     def generate(self, prompt: str) -> str:
         """呼叫 Gemini API 並回傳純文字回應。"""
         import socket
 
+        # 延遲 import，確保 SDK 已安裝
+        from google.genai import types
+
         try:
-            response = self._model.generate_content(
-                prompt,
-                request_options={"timeout": DEFAULT_TIMEOUT_SECONDS},
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    http_options=types.HttpOptions(
+                        timeout=DEFAULT_TIMEOUT_SECONDS * 1000,
+                    ),
+                ),
             )
             return response.text
 
         except Exception as exc:
             error_msg = str(exc)
 
-            # 判斷是否為 API key 過期或無效的錯誤
+            # 新版 google.genai SDK 使用 ClientError 型別
+            try:
+                from google.genai import errors as genai_errors
+
+                if isinstance(exc, genai_errors.ClientError):
+                    status_code = getattr(exc, "code", 0) or 0
+
+                    # HTTP 401 = API key 無效或未授權
+                    if status_code == 401 or "API_KEY_INVALID" in error_msg:
+                        raise PermissionError(
+                            "GEMINI_API_KEY 無效或已過期。"
+                            "請重新取得有效的 API key 並更新 .env 檔案。"
+                        ) from exc
+
+                    # HTTP 429 = quota 超限（免費層限制）
+                    if status_code == 429:
+                        raise PermissionError(
+                            "Gemini API 呼叫頻率或配額超限（429 RESOURCE_EXHAUSTED）。"
+                            "請稍待片刻後重試，或確認 API key 的配額設定。"
+                        ) from exc
+
+            except ImportError:
+                pass
+
+            # 舊版字串 match 作為 fallback（API key 無效）
             if "API_KEY_INVALID" in error_msg or "API key not valid" in error_msg:
                 raise PermissionError(
                     "GEMINI_API_KEY 無效或已過期。"
