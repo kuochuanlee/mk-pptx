@@ -21,8 +21,10 @@ mk-pptx/
 ├── docs/
 │   └── pptx_automation_plan.md  # 本文件
 ├── skills/
-│   ├── json_outline.md          # Prompt：文字內容 -> JSON
-│   └── mermaid_diagram.md       # Prompt：草圖描述 -> Mermaid
+│   ├── json-outline/
+│   │   └── SKILL.md             # Prompt：文字內容 -> JSON
+│   └── mermaid-diagram/
+│       └── SKILL.md             # Prompt：草圖描述 -> Mermaid
 ├── schemas/
 │   └── slide_schema.py          # Pydantic 資料模型定義
 ├── config/
@@ -208,7 +210,7 @@ GEMINI_API_KEY=your-key-here
 
 ## 階段四：撰寫 SKILL Prompt
 
-### 4-1 skills/json_outline.md（文字內容 -> JSON）
+### 4-1 skills/json-outline/SKILL.md（文字內容 -> JSON）
 
 Prompt 結構：
 
@@ -236,7 +238,7 @@ Prompt 結構：
 5. **輸入佔位符**
    - 最後一行：`請將以下內容轉換為簡報 JSON：\n{USER_INPUT}`
 
-### 4-2 skills/mermaid_diagram.md（草圖描述 -> Mermaid）
+### 4-2 skills/mermaid-diagram/SKILL.md（草圖描述 -> Mermaid）
 
 Prompt 結構：
 
@@ -540,7 +542,7 @@ __pycache__/
 
 ### 版控優點
 
-- `git diff skills/json_outline.md` 追蹤 Prompt 調整歷史
+- `git diff skills/json-outline/SKILL.md` 追蹤 Prompt 調整歷史
 - `git diff output/slides.json` 看每次簡報內容改了哪幾頁
 - `git diff config/mermaid.json` 追蹤色系調整
 

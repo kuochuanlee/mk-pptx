@@ -36,8 +36,10 @@ mk-pptx/
 ├── schemas/
 │   └── slide_schema.py       # Pydantic 資料模型定義
 ├── skills/
-│   ├── json_outline.md       # SKILL: 文字稿 -> 簡報 JSON
-│   └── mermaid_diagram.md    # SKILL: 草圖描述 -> Mermaid 語法
+│   ├── json-outline/
+│   │   └── SKILL.md          # SKILL: 文字稿 -> 簡報 JSON
+│   └── mermaid-diagram/
+│       └── SKILL.md          # SKILL: 草圖描述 -> Mermaid 語法
 ├── src/
 │   ├── main.py               # CLI 統一入口
 │   ├── llm_client.py         # LLM 呼叫抽象層（Gemini / Azure OpenAI）

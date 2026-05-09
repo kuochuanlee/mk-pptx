@@ -1,3 +1,8 @@
+---
+name: json_outline
+description: 文字內容轉企業簡報 JSON
+---
+
 # SKILL: json_outline -- 文字內容轉企業簡報 JSON
 
 ## 角色設定

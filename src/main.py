@@ -52,7 +52,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # SKILL prompt 路徑（相對於專案根目錄）
-SKILL_JSON_OUTLINE_PATH = Path("skills") / "json_outline.md"
+SKILL_JSON_OUTLINE_PATH = Path("skills") / "json-outline" / "SKILL.md"
 
 # template_map.json 路徑
 TEMPLATE_MAP_PATH = Path("config") / "template_map.json"

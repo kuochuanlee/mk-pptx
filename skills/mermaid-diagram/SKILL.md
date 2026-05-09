@@ -1,3 +1,8 @@
+---
+name: mermaid_diagram
+description: 草圖描述轉 Mermaid 語法
+---
+
 # SKILL: mermaid_diagram -- 草圖描述轉 Mermaid 語法
 
 ## 角色設定
