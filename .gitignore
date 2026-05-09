@@ -1,6 +1,15 @@
 # 公司機密模板
 config/template.pptx
 
+# Node.js
+node_modules
+node_modules/*
+
+# 輸入檔案
+input/*.txt
+input/*.json
+input/*.md
+
 # 產出檔案
 output/*.pptx
 output/*.png

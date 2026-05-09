@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -50,22 +51,30 @@ class DiagramResult:
     svg_path: Path
 
 
-def _find_mmdc() -> str | None:
+def _find_mmdc() -> list[str] | None:
     """尋找 mmdc 可執行檔。
 
     優先順序：
-      1. 環境變數 MMDC_PATH 指定的路徑
-      2. PATH 中的 mmdc 指令
+      1. npx mmdc (如果目錄下有 node_modules)
+      2. 環境變數 MMDC_PATH 指定的路徑
+      3. PATH 中的 mmdc 指令
 
     Returns:
-        mmdc 路徑字串，若找不到則回傳 None
+        執行 mmdc 的指令陣列，例如 ["npx", "mmdc"]，找不到則回傳 None
     """
-    # 優先使用環境變數指定的路徑
+    # 根據 npm 開發規則：優先使用 npx 執行專案區域安裝的工具
+    import shutil
+    
+    npx_path = shutil.which("npx")
+    if npx_path and (Path("node_modules").exists() or Path("package.json").exists()):
+        return [npx_path, "mmdc"]
+
+    # 其次使用環境變數指定的路徑
     env_path = os.environ.get("MMDC_PATH")
 
     if env_path:
         if Path(env_path).is_file():
-            return env_path
+            return [env_path]
 
         logger.warning("MMDC_PATH 指定的路徑不存在：%s", env_path)
 
@@ -74,7 +83,10 @@ def _find_mmdc() -> str | None:
 
     mmdc_path = shutil.which(MMDC_COMMAND)
 
-    return mmdc_path
+    if mmdc_path:
+        return [mmdc_path]
+
+    return None
 
 
 def is_mmdc_available() -> bool:
@@ -107,11 +119,11 @@ def build_diagram(
         若 mmdc 執行失敗則回傳 None（上層應 fallback 至 bullets_only）
     """
     # 確認 mmdc 可用
-    mmdc_exe = _find_mmdc()
+    mmdc_cmd = _find_mmdc()
 
-    if mmdc_exe is None:
+    if mmdc_cmd is None:
         logger.error(
-            "找不到 mmdc 指令。請確認已安裝 @mermaid-js/mermaid-cli，"
+            "找不到 mmdc 指令。請確認已在專案根目錄執行 npm install @mermaid-js/mermaid-cli，"
             "或設定環境變數 MMDC_PATH 指向 mmdc 可執行檔。"
         )
         return None
@@ -136,7 +148,7 @@ def build_diagram(
 
         # 渲染 PNG
         png_success = _run_mmdc(
-            mmdc_exe=mmdc_exe,
+            mmdc_cmd=mmdc_cmd,
             input_path=tmp_mmd,
             output_path=png_path,
             config_path=config_path,
@@ -148,7 +160,7 @@ def build_diagram(
 
         # 渲染 SVG
         svg_success = _run_mmdc(
-            mmdc_exe=mmdc_exe,
+            mmdc_cmd=mmdc_cmd,
             input_path=tmp_mmd,
             output_path=svg_path,
             config_path=config_path,
@@ -200,7 +212,7 @@ def _write_temp_mmd(mermaid_string: str) -> Path:
 
 
 def _run_mmdc(
-    mmdc_exe: str,
+    mmdc_cmd: list[str],
     input_path: Path,
     output_path: Path,
     config_path: Path,
@@ -209,7 +221,7 @@ def _run_mmdc(
     """執行 mmdc 指令，渲染單一輸出格式。
 
     Args:
-        mmdc_exe: mmdc 可執行檔路徑
+        mmdc_cmd: 執行 mmdc 的 base command list
         input_path: 輸入 .mmd 檔路徑
         output_path: 輸出檔案路徑（.png 或 .svg）
         config_path: mmdc 設定檔路徑
@@ -218,16 +230,15 @@ def _run_mmdc(
     Returns:
         True 表示成功，False 表示失敗
     """
-    # 組合 mmdc 指令參數
-    cmd = [
-        mmdc_exe,
-        "-i", str(input_path),
-        "-o", str(output_path),
+    # 組合 mmdc 指令參數（確保輸入輸出路徑為絕對路徑，防範 PyPI 版 mmdc 解析問題）
+    cmd = mmdc_cmd + [
+        "-i", str(input_path.absolute()),
+        "-o", str(output_path.absolute()),
     ]
 
-    # 僅在設定檔存在時加入 -c 參數
+    # 僅在設定檔存在時加入 -c 參數，並轉為絕對路徑
     if config_path.exists():
-        cmd.extend(["-c", str(config_path)])
+        cmd.extend(["-c", str(config_path.absolute())])
     else:
         logger.warning("mmdc 設定檔不存在，使用 mmdc 預設樣式：%s", config_path)
 
@@ -254,6 +265,17 @@ def _run_mmdc(
             )
             return False
 
+        # PyPI 版 mmdc 遇到設定檔解析錯誤時可能 swallow 例外並回傳 exit code 0，
+        # 因此明確檢查產出檔是否存在。
+        if not output_path.exists():
+            logger.error(
+                "mmdc 執行完畢但未生成產出檔（可能為內部錯誤）：%s\nstdout: %s\nstderr: %s",
+                output_path,
+                result.stdout.strip(),
+                result.stderr.strip(),
+            )
+            return False
+
         return True
 
     except subprocess.TimeoutExpired:
@@ -265,5 +287,5 @@ def _run_mmdc(
         return False
 
     except FileNotFoundError:
-        logger.error("mmdc 執行檔不存在：%s", mmdc_exe)
+        logger.error("mmdc 指令不存在：%s", " ".join(mmdc_cmd))
         return False
