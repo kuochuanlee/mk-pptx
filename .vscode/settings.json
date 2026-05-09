@@ -1,0 +1,13 @@
+{
+    "terminal.integrated.cwd": "D:\\gemini-cli\\mk-pptx",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "args": [
+                "-NoExit",
+                "-Command",
+                "${workspaceFolder}\\.venv\\Scripts\\Activate.ps1"
+            ]
+        }
+    },
+}

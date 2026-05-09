@@ -1,0 +1,20 @@
+# 公司機密模板
+config/template.pptx
+
+# 產出檔案
+output/*.pptx
+output/*.png
+output/*.svg
+output/*.mmd
+
+# Python 虛擬環境與快取
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 敏感設定
+.env
+
+# 套件安裝產生的 metadata
+*.egg-info/

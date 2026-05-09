@@ -1,0 +1,63 @@
+{
+    "template_path": "template/Creative-Idea-Bulb-PowerPoint-Template.pptx",
+    "slide_width_emu": 9144000,
+    "slide_height_emu": 5143500,
+    "_available_layouts": [
+        "Cover Slide layout",
+        "End Slide Layout",
+        "Agenda Layout",
+        "Section Break Layout",
+        "3_Basic Layout",
+        "Basic Layout",
+        "Images and Contents Layout",
+        "3_Images and Contents Layout",
+        "1_Images and Contents Layout",
+        "6_Images and Contents Layout",
+        "4_Images and Contents Layout",
+        "4_Basic Layout",
+        "5_Images and Contents Layout",
+        "2_Images and Contents Layout",
+        "8_Images and Contents Layout",
+        "7_Images and Contents Layout",
+        "shapes sets layout",
+        "icon sets layout"
+    ],
+    "_note": "請將 layouts 中各 layout_type 的 layout_name 改為對應的模板 layout 名稱。",
+    "layouts": {
+        "title_slide": {
+            "layout_name": "Cover Slide layout",
+            "title_idx": 10,
+            "subtitle_idx": 11
+        },
+        "section_divider": {
+            "layout_name": "Cover Slide layout",
+            "title_idx": 10,
+            "subtitle_idx": 11
+        },
+        "bullets_only": {
+            "layout_name": "Cover Slide layout",
+            "title_idx": 10,
+            "subtitle_idx": 11
+        },
+        "table_only": {
+            "layout_name": "Cover Slide layout",
+            "title_idx": 10,
+            "subtitle_idx": 11
+        },
+        "bullets_with_table": {
+            "layout_name": "Cover Slide layout",
+            "title_idx": 10,
+            "subtitle_idx": 11
+        },
+        "diagram_only": {
+            "layout_name": "Cover Slide layout",
+            "title_idx": 10,
+            "subtitle_idx": 11
+        },
+        "bullets_with_diagram": {
+            "layout_name": "Cover Slide layout",
+            "title_idx": 10,
+            "subtitle_idx": 11
+        }
+    }
+}

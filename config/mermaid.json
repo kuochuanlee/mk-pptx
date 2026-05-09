@@ -1,0 +1,12 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#005BAC",
+    "primaryTextColor": "#FFFFFF",
+    "primaryBorderColor": "#003F7D",
+    "lineColor": "#333333",
+    "secondaryColor": "#E8F0FA",
+    "fontFamily": "Noto Sans TC, Microsoft JhengHei, sans-serif",
+    "fontSize": "16px"
+  }
+}

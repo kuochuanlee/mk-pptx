@@ -1,0 +1,23 @@
+[project]
+name = "mk-pptx"
+version = "0.1.0"
+description = "AI 輔助企業簡報自動化工具"
+requires-python = ">=3.13"
+dependencies = [
+    "python-pptx==1.0.2",
+    "pydantic>=2.0,<3.0",
+]
+
+[project.optional-dependencies]
+gemini = ["google-generativeai>=0.8"]
+azure = ["openai>=1.0"]
+dev = [
+    "pytest>=8.0",
+    "pip-audit",
+]
+
+[project.scripts]
+mk-pptx = "src.main:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
