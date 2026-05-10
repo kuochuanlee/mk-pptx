@@ -121,6 +121,9 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o
 > 使用 `scan_template.py` 可列印模板中所有 layout 名稱與 placeholder index，協助填寫 `template_map.json`：
 > ```bash
 > uv run python scan_template.py
+> 
+> # 若加上 --dump-map，會自動生成 template_map_draft.json 初稿供複製參考
+> uv run python scan_template.py --dump-map
 > ```
 
 ## 使用方式
